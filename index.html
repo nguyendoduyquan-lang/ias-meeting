@@ -94,7 +94,6 @@
     .modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.6); z-index: 50; display: none; align-items: center; justify-content: center; backdrop-filter: blur(2px);}
     .modal-box { background: #fff; padding: 24px; border-radius: 6px; width: 320px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border: 1px solid var(--border);}
 
-    /* Xem trước modal */
     .preview-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.85); z-index: 100; display: none; flex-direction: column; }
     .preview-bar { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 12px 24px; background: #fff; border-bottom: 1px solid var(--border); }
     .preview-warn { font-size: 12px; color: #9a3412; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 4px; padding: 6px 10px; max-width: 60%; max-height: 64px; overflow-y: auto; display: none; }
@@ -198,19 +197,17 @@
         </div>
 
         <div class="card">
-          <div class="flex justify-between items-center mb-4">
-            <div class="card-title mb-0 border-none pb-0"><span class="material-symbols-outlined">task_alt</span> BẢNG GIAO VIỆC (ACTION ITEMS)</div>
-            <button onclick="addTaskRow()" class="btn btn-outline text-xs py-1.5 px-3">+ Giao việc mới</button>
-          </div>
-          <div class="table-container">
-            <table id="taskTable">
-              <thead><tr><th width="15%">Thuộc khối</th><th width="17%">Giao đ/c (1 người)</th><th width="28%">Nhiệm vụ cần làm</th><th width="13%">Hạn chót</th><th width="22%">Kết quả nghiệm thu</th><th width="5%"></th></tr></thead>
-              <tbody></tbody>
-            </table>
-          </div>
+          <div class="card-title"><span class="material-symbols-outlined">task_alt</span> BẢNG GIAO VIỆC (ACTION ITEMS)</div>
+          <button onclick="addTaskRow()" class="btn btn-outline text-xs py-1.5 px-3">+ Giao việc mới</button>
+        </div>
+        <div class="table-container">
+          <table id="taskTable">
+            <thead><tr><th width="15%">Thuộc khối</th><th width="17%">Giao đ/c (1 người)</th><th width="28%">Nhiệm vụ cần làm</th><th width="13%">Hạn chót</th><th width="22%">Kết quả nghiệm thu</th><th width="5%"></th></tr></thead>
+            <tbody></tbody>
+          </table>
         </div>
 
-        <div class="card">
+        <div class="card mt-6">
           <div class="card-title"><span class="material-symbols-outlined">flag</span> MỤC "VỀ TỔ CHỨC THỰC HIỆN" (TÙY CHỌN)</div>
           <p class="hint" style="margin:-4px 0 12px">Mặc định văn bản đã có 2 ý chuẩn (Thư ký nhắc nhở tạo tác vụ trên Ingene Workspace; mốc kiểm tra là kỳ họp kế tiếp). Chỉ điền các ô dưới nếu cần thay đổi hoặc bổ sung.</p>
           <div class="grid grid-cols-2 gap-4">
@@ -284,9 +281,11 @@
     let isApplyingRemote = false;
 
     try {
-      firebase.initializeApp(firebaseConfig);
-      db = firebase.database();
-      meetingRef = db.ref('current_meeting');
+      if (typeof firebase !== 'undefined') {
+        firebase.initializeApp(firebaseConfig);
+        db = firebase.database();
+        meetingRef = db.ref('current_meeting');
+      }
     } catch(err) {
       console.warn("Lỗi khởi tạo Firebase:", err);
     }
@@ -298,9 +297,9 @@
     let currentRole = 'guest', currentTab = 'tabAgenda', targetRoleForPin = '', currentPreviewType = '', published = false;
 
     const guides = {
-      agenda: `<div class="guide-title">BƯỚC 1: LẬP AGENDA</div><div class="guide-text"><ul class="pl-4 list-disc space-y-2"><li>Mỗi <b>Khối</b> có một ô <b>Thời gian</b> riêng (ở đầu khối); trong file Word ô này được gộp dọc cho cả khối.</li><li>Số thứ tự 1.1, 1.2, 2.1... tự đánh, không cần gõ.</li><li>Tên Khối gõ kiểu nào cũng được: Agenda luôn in HOA, Thông báo kết luận tự chuyển về chữ thường ("Rà soát tiến độ").</li><li>Dữ liệu tự động đồng bộ lên Firebase đám mây theo thời gian thực.</li><li>Bấm <b>Xem trước</b> để xem đúng file sẽ xuất.</li></ul></div>`,
-      minutes_sec: `<div class="guide-title">BƯỚC 2: HỌP &amp; GHI CHÉP</div><div class="guide-text"><p class="font-semibold text-dark mb-2">Vai trò: Thư ký</p><ul class="pl-4 list-disc space-y-2"><li>Mỗi khối có danh sách nội dung đã lên Agenda (chữ mờ) để bạn bám theo; ghi kết luận 1 - 3 câu vào ô bên dưới.</li><li>Giao việc: mỗi dòng 1 người, 1 việc, 1 hạn chót dd/mm/yyyy, 1 sản phẩm nghiệm thu; chọn đúng <b>khối</b> của việc đó. Hệ thống ráp thành câu mẫu khi xuất file.</li><li>Thư ký gõ tới đâu, Trưởng ban mở máy lên thấy ngay lập tức.</li></ul></div>`,
-      minutes_admin: `<div class="guide-title">BƯỚC 3: DUYỆT &amp; BAN HÀNH</div><div class="guide-text"><p class="font-semibold text-dark mb-2">Vai trò: Trưởng ban</p><ul class="pl-4 list-disc space-y-2"><li>Soát lỗi trực tiếp trên form nhập liệu.</li><li>Bấm <b>Xem trước</b>: chỗ nào còn thiếu sẽ hiện chữ nền vàng, giống file mẫu.</li><li>Bấm <b>Duyệt &amp; Xuất TBKL</b> để tải file Word.</li></ul></div>`
+      agenda: '<div class="guide-title">BƯỚC 1: LẬP AGENDA</div><div class="guide-text"><ul class="pl-4 list-disc space-y-2"><li>Mỗi <b>Khối</b> có một ô <b>Thời gian</b> riêng (ở đầu khối); trong file Word ô này được gộp dọc cho cả khối.</li><li>Số thứ tự 1.1, 1.2, 2.1... tự đánh, không cần gõ.</li><li>Tên Khối gõ kiểu nào cũng được: Agenda luôn in HOA, Thông báo kết luận tự chuyển về chữ thường ("Rà soát tiến độ").</li><li>Dữ liệu tự động đồng bộ lên Firebase đám mây theo thời gian thực.</li><li>Bấm <b>Xem trước</b> để xem đúng file sẽ xuất.</li></ul></div>',
+      minutes_sec: '<div class="guide-title">BƯỚC 2: HỌP &amp; GHI CHÉP</div><div class="guide-text"><p class="font-semibold text-dark mb-2">Vai trò: Thư ký</p><ul class="pl-4 list-disc space-y-2"><li>Mỗi khối có danh sách nội dung đã lên Agenda (chữ mờ) để bạn bám theo; ghi kết luận 1 - 3 câu vào ô bên dưới.</li><li>Giao việc: mỗi dòng 1 người, 1 việc, 1 hạn chót dd/mm/yyyy, 1 sản phẩm nghiệm thu; chọn đúng <b>khối</b> của việc đó. Hệ thống ráp thành câu mẫu khi xuất file.</li><li>Thư ký gõ tới đâu, Trưởng ban mở máy lên thấy ngay lập tức.</li></ul></div>',
+      minutes_admin: '<div class="guide-title">BƯỚC 3: DUYỆT &amp; BAN HÀNH</div><div class="guide-text"><p class="font-semibold text-dark mb-2">Vai trò: Trưởng ban</p><ul class="pl-4 list-disc space-y-2"><li>Soát lỗi trực tiếp trên form nhập liệu.</li><li>Bấm <b>Xem trước</b>: chỗ nào còn thiếu sẽ hiện chữ nền vàng, giống file mẫu.</li><li>Bấm <b>Duyệt &amp; Xuất TBKL</b> để tải file Word.</li></ul></div>'
     };
 
     /* ---------- Tiện ích ---------- */
@@ -338,20 +337,23 @@
 
     /* ---------- Hướng dẫn / stepper / tab / PIN ---------- */
     function updateGuideAndStepper() {
-      $('guideContent').innerHTML = currentTab === 'tabAgenda' ? guides.agenda : (currentRole === 'admin' ? guides.minutes_admin : guides.minutes_sec);
+      const gb = $('guideContent');
+      if (gb) gb.innerHTML = currentTab === 'tabAgenda' ? guides.agenda : (currentRole === 'admin' ? guides.minutes_admin : guides.minutes_sec);
       const s = [1, 2, 3, 4].map(i => $('step' + i));
-      s.forEach(e => e.classList.remove('active', 'completed'));
-      if (currentTab === 'tabAgenda') { s[0].classList.add('active'); }
+      s.forEach(e => { if (e) e.classList.remove('active', 'completed'); });
+      if (currentTab === 'tabAgenda') { if (s[0]) s[0].classList.add('active'); }
       else {
-        s[0].classList.add('completed');
-        if (currentRole === 'admin') { s[1].classList.add('completed'); s[2].classList.add('active'); } else { s[1].classList.add('active'); }
+        if (s[0]) s[0].classList.add('completed');
+        if (currentRole === 'admin') { if (s[1]) s[1].classList.add('completed'); if (s[2]) s[2].classList.add('active'); } 
+        else { if (s[1]) s[1].classList.add('active'); }
       }
-      if (published) { s[2].classList.remove('active'); s[2].classList.add('completed'); s[3].classList.add('completed'); }
+      if (published) { if (s[2]) { s[2].classList.remove('active'); s[2].classList.add('completed'); } if (s[3]) s[3].classList.add('completed'); }
     }
     function switchTab(tabId, btn) {
       currentTab = tabId;
       document.querySelectorAll('.tab-content, .tab-btn').forEach(el => el.classList.remove('active'));
-      $(tabId).classList.add('active'); btn.classList.add('active');
+      const tc = $(tabId); if (tc) tc.classList.add('active'); 
+      if (btn) btn.classList.add('active');
       updateGuideAndStepper();
     }
     function openPinModal(role) { targetRoleForPin = role; $('pinInput').value = ''; $('pinModal').style.display = 'flex'; setTimeout(() => $('pinInput').focus(), 100); }
@@ -377,13 +379,13 @@
     function buildItemRow(d) {
       d = d || {};
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td><span class="item-no"></span></td>
-        <td><textarea class="form-textarea ag-issue text-xs"></textarea></td>
-        <td><select class="form-select ag-type text-xs">${TYPES.map(t => `<option>${t}</option>`).join('')}</select></td>
-        <td><input type="text" class="form-input ag-owner text-xs"></td>
-        <td><textarea class="form-textarea ag-doc text-xs"></textarea></td>
-        <td><textarea class="form-textarea ag-out text-xs"></textarea></td>
-        <td class="text-center"><button type="button" data-act="del-item" class="text-rose-600 font-bold hover:text-rose-800" title="Xóa dòng">×</button></td>`;
+      tr.innerHTML = '<td><span class="item-no"></span></td>' +
+        '<td><textarea class="form-textarea ag-issue text-xs"></textarea></td>' +
+        '<td><select class="form-select ag-type text-xs">' + TYPES.map(t => '<option>' + t + '</option>').join('') + '</select></td>' +
+        '<td><input type="text" class="form-input ag-owner text-xs"></td>' +
+        '<td><textarea class="form-textarea ag-doc text-xs"></textarea></td>' +
+        '<td><textarea class="form-textarea ag-out text-xs"></textarea></td>' +
+        '<td class="text-center"><button type="button" data-act="del-item" class="text-rose-600 font-bold hover:text-rose-800" title="Xóa dòng">×</button></td>';
       tr.querySelector('.ag-issue').value = d.issue || '';
       tr.querySelector('.ag-type').value = TYPES.includes(d.type) ? d.type : '[Thảo luận]';
       tr.querySelector('.ag-owner').value = d.owner || '';
@@ -397,18 +399,18 @@
       const g = document.createElement('div');
       g.className = 'agenda-group';
       g.dataset.gid = d.id || uid();
-      g.innerHTML = `<div class="agenda-group-header">
-          <input type="text" class="agenda-group-title group-name" placeholder="Tên khối">
-          <label class="group-time-wrap">Thời gian khối <input type="text" class="form-input text-xs group-time" placeholder="18:00 - 18:10"></label>
-          <button type="button" data-act="del-group" class="text-rose-600 text-xs hover:underline">Xóa khối</button>
-        </div>
-        <div class="table-container">
-          <table>
-            <thead><tr><th width="4%">#</th><th width="30%">Nội dung công việc</th><th width="10%">Tính chất</th><th width="15%">Phụ trách</th><th width="18%">Tài liệu/Căn cứ</th><th width="20%">Đầu ra bắt buộc</th><th width="3%"></th></tr></thead>
-            <tbody class="group-items"></tbody>
-          </table>
-        </div>
-        <div class="bg-white p-2 border-t-line"><button type="button" data-act="add-item" class="btn btn-text text-xs">+ Thêm vấn đề</button></div>`;
+      g.innerHTML = '<div class="agenda-group-header">' +
+          '<input type="text" class="agenda-group-title group-name" placeholder="Tên khối">' +
+          '<label class="group-time-wrap">Thời gian khối <input type="text" class="form-input text-xs group-time" placeholder="18:00 - 18:10"></label>' +
+          '<button type="button" data-act="del-group" class="text-rose-600 text-xs hover:underline">Xóa khối</button>' +
+        '</div>' +
+        '<div class="table-container">' +
+          '<table>' +
+            '<thead><tr><th width="4%">#</th><th width="30%">Nội dung công việc</th><th width="10%">Tính chất</th><th width="15%">Phụ trách</th><th width="18%">Tài liệu/Căn cứ</th><th width="20%">Đầu ra bắt buộc</th><th width="3%"></th></tr></thead>' +
+            '<tbody class="group-items"></tbody>' +
+          '</table>' +
+        '</div>' +
+        '<div class="bg-white p-2 border-t-line"><button type="button" data-act="add-item" class="btn btn-text text-xs">+ Thêm vấn đề</button></div>';
       g.querySelector('.group-name').value = d.name || '';
       g.querySelector('.group-time').value = d.time || '';
       const tb = g.querySelector('.group-items');
@@ -419,12 +421,12 @@
     function buildTaskRow(d) {
       d = d || {};
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td><select class="form-select text-xs t-group"></select></td>
-        <td><input type="text" class="form-input text-xs t-who" placeholder="Họ và tên"></td>
-        <td><textarea class="form-textarea text-xs t-what" placeholder="Mô tả nhiệm vụ"></textarea></td>
-        <td><input type="text" class="form-input text-xs t-deadline" placeholder="dd/mm/yyyy"></td>
-        <td><textarea class="form-textarea text-xs t-deliverable" placeholder="Sản phẩm kiểm chứng"></textarea></td>
-        <td class="text-center"><button type="button" data-act="del-task" class="text-rose-600 font-bold hover:text-rose-800" title="Xóa dòng">×</button></td>`;
+      tr.innerHTML = '<td><select class="form-select text-xs t-group"></select></td>' +
+        '<td><input type="text" class="form-input text-xs t-who" placeholder="Họ và tên"></td>' +
+        '<td><textarea class="form-textarea text-xs t-what" placeholder="Mô tả nhiệm vụ"></textarea></td>' +
+        '<td><input type="text" class="form-input text-xs t-deadline" placeholder="dd/mm/yyyy"></td>' +
+        '<td><textarea class="form-textarea text-xs t-deliverable" placeholder="Sản phẩm kiểm chứng"></textarea></td>' +
+        '<td class="text-center"><button type="button" data-act="del-task" class="text-rose-600 font-bold hover:text-rose-800" title="Xóa dòng">×</button></td>';
       tr.dataset.gid = d.gid || '';
       tr.querySelector('.t-who').value = d.who || '';
       tr.querySelector('.t-what').value = d.what || '';
@@ -459,7 +461,7 @@
       } else if (act === 'del-group') {
         const g = b.closest('.agenda-group');
         const name = g.querySelector('.group-name').value || 'này';
-        if (!confirm(`Xóa khối "${name}"?\nKết luận của khối sẽ bị xóa; các việc đã giao thuộc khối này được chuyển sang mục "Chung".`)) return;
+        if (!confirm('Xóa khối "' + name + '"?\nKết luận của khối sẽ bị xóa; các việc đã giao thuộc khối này được chuyển sang mục "Chung".')) return;
         const gid = g.dataset.gid;
         document.querySelectorAll('#taskTable tbody tr').forEach(tr => { if (tr.dataset.gid === gid) tr.dataset.gid = ''; });
         g.remove(); afterStructureChange();
@@ -470,47 +472,56 @@
 
     function renumber() {
       document.querySelectorAll('.agenda-group').forEach((g, gi) => {
-        g.querySelectorAll('.group-items tr').forEach((tr, ri) => { tr.querySelector('.item-no').textContent = `${gi + 1}.${ri + 1}.`; });
+        g.querySelectorAll('.group-items tr').forEach((tr, ri) => { tr.querySelector('.item-no').textContent = (gi + 1) + '.' + (ri + 1) + '.'; });
       });
     }
 
     function syncConclusions() {
       const box = $('conclusionsContainer');
-      const groups = [...document.querySelectorAll('.agenda-group')];
+      const groups = Array.from(document.querySelectorAll('.agenda-group'));
       const ids = new Set(groups.map(g => g.dataset.gid));
       box.querySelectorAll('.concl-empty').forEach(e => e.remove());
-      if (!groups.length) { const d = document.createElement('div'); d.className = 'concl-empty'; d.textContent = 'Chưa có khối nào. Hãy lập Agenda ở Tab 1 trước.'; box.appendChild(d); }
+      if (!groups.length) { 
+        const d = document.createElement('div'); 
+        d.className = 'concl-empty'; 
+        d.textContent = 'Chưa có khối nào. Hãy lập Agenda ở Tab 1 trước.'; 
+        box.appendChild(d); 
+      }
       box.querySelectorAll('[data-gid]').forEach(el => { if (!ids.has(el.dataset.gid)) el.remove(); });
       groups.forEach((g, i) => {
-        let el = box.querySelector(`[data-gid="${g.dataset.gid}"]`);
+        let el = box.querySelector('[data-gid="' + g.dataset.gid + '"]');
         if (!el) {
           el = document.createElement('div');
           el.dataset.gid = g.dataset.gid;
           el.innerHTML = '<label class="form-label mt-4"></label><ul class="checklist"></ul><textarea class="form-textarea mb-4 sec-conclusion" placeholder="Nhập tóm tắt kết luận (1 - 3 câu)..."></textarea>';
         }
-        el.querySelector('label').textContent = `${i + 1}. Về ${minutesName(g.querySelector('.group-name').value) || '(chưa đặt tên)'}`;
+        el.querySelector('label').textContent = (i + 1) + '. Về ' + (minutesName(g.querySelector('.group-name').value) || '(chưa đặt tên)');
         const ul = el.querySelector('.checklist'); ul.innerHTML = '';
         const t = document.createElement('li'); t.className = 'checklist-title'; t.style.listStyle = 'none'; t.textContent = 'Nội dung đã lên Agenda:';
         ul.appendChild(t);
-        const its = [...g.querySelectorAll('.group-items tr')].map((tr, ri) => ({ n: `${i + 1}.${ri + 1}.`, t: tr.querySelector('.ag-issue').value.trim().split(/\r?\n/)[0] })).filter(x => x.t);
-        (its.length ? its : [{ n: '', t: '(Khối này chưa có nội dung ở Tab 1)' }]).forEach(x => { const li = document.createElement('li'); li.textContent = `${x.n} ${x.t}`.trim(); ul.appendChild(li); });
+        const its = Array.from(g.querySelectorAll('.group-items tr')).map((tr, ri) => ({ n: (i + 1) + '.' + (ri + 1) + '.', t: tr.querySelector('.ag-issue').value.trim().split(/\r?\n/)[0] })).filter(x => x.t);
+        (its.length ? its : [{ n: '', t: '(Khối này chưa có nội dung ở Tab 1)' }]).forEach(x => { 
+          const li = document.createElement('li'); 
+          li.textContent = (x.n + ' ' + x.t).trim(); 
+          ul.appendChild(li); 
+        });
         if (box.children[i] !== el) box.insertBefore(el, box.children[i] || null);
       });
     }
 
     function refreshTaskGroupSelects() {
-      const groups = [...document.querySelectorAll('.agenda-group')];
+      const groups = Array.from(document.querySelectorAll('.agenda-group'));
       document.querySelectorAll('#taskTable tbody tr').forEach(tr => {
         const sel = tr.querySelector('.t-group');
         const cur = tr.dataset.gid || '';
         sel.innerHTML = '';
         groups.forEach((g, i) => {
           const o = document.createElement('option');
-          o.value = g.dataset.gid; o.textContent = `${i + 1}. ${minutesName(g.querySelector('.group-name').value) || '(chưa đặt tên)'}`;
+          o.value = g.dataset.gid; o.textContent = (i + 1) + '. ' + (minutesName(g.querySelector('.group-name').value) || '(chưa đặt tên)');
           sel.appendChild(o);
         });
         const o = document.createElement('option'); o.value = ''; o.textContent = 'Chung (tổ chức thực hiện)'; sel.appendChild(o);
-        const has = [...sel.options].some(x => x.value === cur);
+        const has = Array.from(sel.options).some(x => x.value === cur);
         sel.value = has ? cur : '';
         tr.dataset.gid = sel.value;
       });
@@ -532,20 +543,20 @@
     /* ---------- Thu thập & áp dụng trạng thái ---------- */
     const META_IDS = ['mDate', 'mTime', 'mLoc', 'mSec', 'mMonth', 'mHost', 'mNo', 'mIssueDate', 'mTopic', 'mSignTitle', 'mSignName', 'mCheckDate', 'mOverdue', 'mReserve'];
     function collect() {
-      const meta = {}; META_IDS.forEach(id => meta[id] = $(id).value);
-      meta.mAuth = $('mAuth').checked;
-      const groups = [...document.querySelectorAll('.agenda-group')].map(g => ({
+      const meta = {}; META_IDS.forEach(id => { const el = $(id); meta[id] = el ? el.value : ''; });
+      meta.mAuth = $('mAuth') ? $('mAuth').checked : false;
+      const groups = Array.from(document.querySelectorAll('.agenda-group')).map(g => ({
         id: g.dataset.gid,
         name: g.querySelector('.group-name').value,
         time: g.querySelector('.group-time').value,
-        items: [...g.querySelectorAll('.group-items tr')].map(tr => ({
+        items: Array.from(g.querySelectorAll('.group-items tr')).map(tr => ({
           issue: tr.querySelector('.ag-issue').value, type: tr.querySelector('.ag-type').value,
           owner: tr.querySelector('.ag-owner').value, doc: tr.querySelector('.ag-doc').value, out: tr.querySelector('.ag-out').value
         }))
       }));
       const concl = {};
       document.querySelectorAll('#conclusionsContainer [data-gid]').forEach(el => { concl[el.dataset.gid] = el.querySelector('textarea').value; });
-      const tasks = [...document.querySelectorAll('#taskTable tbody tr')].map(tr => ({
+      const tasks = Array.from(document.querySelectorAll('#taskTable tbody tr')).map(tr => ({
         gid: tr.dataset.gid || '', who: tr.querySelector('.t-who').value, what: tr.querySelector('.t-what').value,
         deadline: tr.querySelector('.t-deadline').value, deliv: tr.querySelector('.t-deliverable').value
       }));
@@ -555,15 +566,24 @@
     function applyState(s) {
       if (!s) return;
       if (s.meta) {
-        META_IDS.forEach(id => { if (s.meta[id] != null) $(id).value = s.meta[id]; });$('mAuth').checked = !!s.meta.mAuth;
+        META_IDS.forEach(id => { if (s.meta[id] != null && $(id)) $(id).value = s.meta[id]; });
+        if ($('mAuth')) $('mAuth').checked = !!s.meta.mAuth;
       }
-      const gc = $('agendaGroupsContainer'); gc.innerHTML = '';
-      (s.groups || []).forEach(g => gc.appendChild(buildGroup(g)));
-      const tb = $('taskTable').querySelector('tbody'); tb.innerHTML = '';
-      (s.tasks && s.tasks.length ? s.tasks : [{}]).forEach(t => tb.appendChild(buildTaskRow(t)));
-      $('conclusionsContainer').innerHTML = '';
+      const gc = $('agendaGroupsContainer'); 
+      if (gc) {
+        gc.innerHTML = '';
+        (s.groups || []).forEach(g => gc.appendChild(buildGroup(g)));
+      }
+      const tb = $('taskTable') ? $('taskTable').querySelector('tbody') : null; 
+      if (tb) {
+        tb.innerHTML = '';
+        (s.tasks && s.tasks.length ? s.tasks : [{}]).forEach(t => tb.appendChild(buildTaskRow(t)));
+      }
+      if ($('conclusionsContainer')) $('conclusionsContainer').innerHTML = '';
       syncConclusions();
-      document.querySelectorAll('#conclusionsContainer [data-gid]').forEach(el => { el.querySelector('textarea').value = (s.concl && s.concl[el.dataset.gid]) || ''; });
+      document.querySelectorAll('#conclusionsContainer [data-gid]').forEach(el => { 
+        el.querySelector('textarea').value = (s.concl && s.concl[el.dataset.gid]) || ''; 
+      });
       renumber(); refreshTaskGroupSelects();
     }
     const DEFAULT_STATE = () => ({ v: 2, groups: [{ name: 'Thông báo', time: '18:00 - 18:10', items: [{ issue: 'Thông báo về việc bổ sung thư ký cho Dự án', type: '[Thông tin]', owner: 'TBĐH' }] }], tasks: [{}] });
@@ -581,18 +601,18 @@
       try { localStorage.setItem(DRAFT_KEY, JSON.stringify(data)); } catch (e) {}
 
       if (meetingRef) {
-        $('saveState').innerHTML = `<span class="inline-block w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span> Đang đồng bộ Cloud...`;
+        if ($('saveState')) $('saveState').innerHTML = '<span class="inline-block w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span> Đang đồng bộ Cloud...';
         meetingRef.set(data).then(() => {
           const t = new Date();
-          const timeStr = `${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`;
-          $('saveState').innerHTML = `<span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span> Đã đồng bộ Cloud (${timeStr})`;
+          const timeStr = String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0');
+          if ($('saveState')) $('saveState').innerHTML = '<span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span> Đã đồng bộ Cloud (' + timeStr + ')';
         }).catch(err => {
-          $('saveState').innerHTML = `<span class="inline-block w-2 h-2 rounded-full bg-rose-500"></span> Lỗi Cloud (đã lưu máy)`;
+          if ($('saveState')) $('saveState').innerHTML = '<span class="inline-block w-2 h-2 rounded-full bg-rose-500"></span> Lỗi Cloud (đã lưu máy)';
           console.error("Firebase sync error:", err);
         });
       } else {
         const t = new Date();
-        $('saveState').textContent = `Đã lưu cục bộ ${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`;
+        if ($('saveState')) $('saveState').textContent = 'Đã lưu cục bộ ' + String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0');
       }
     }
 
@@ -604,31 +624,42 @@
     function resetDraft() {
       if (!confirm('Bắt đầu phiên họp mới?\nDữ liệu trên Cloud và máy sẽ được làm mới về mặc định.')) return;
       try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
-      ['mNo', 'mIssueDate', 'mTopic', 'mCheckDate', 'mOverdue', 'mReserve'].forEach(id => $(id).value = '');$('mAuth').checked = false; published = false;
+      ['mNo', 'mIssueDate', 'mTopic', 'mCheckDate', 'mOverdue', 'mReserve'].forEach(id => { if ($(id)) $(id).value = ''; });
+      if ($('mAuth')) $('mAuth').checked = false; 
+      published = false;
       const def = DEFAULT_STATE();
       applyState(def); 
       updateGuideAndStepper(); 
       if (meetingRef) meetingRef.set(def);
-      $('saveState').textContent = 'Đã đặt lại';
+      if ($('saveState')) $('saveState').textContent = 'Đã đặt lại';
     }
 
     /* =========================================================
        XÂY DỰNG FILE .DOCX BẰNG JSZIP CHUẨN TỪNG FILE XML
-       (LOẠI BỎ TRIỆT ĐỂ LỖI CORRUPTED SIGNATURE BASE64)
        ========================================================= */
 
     function aRun(t, o, fontName) {
       o = o || {};
       const f = fontName || "IBM Plex Sans";
-      const fTag = `<w:rFonts w:ascii="${f}" w:hAnsi="${f}"/>`;
-      return `<w:r><w:rPr>${fTag}${o.b ? '<w:b/><w:bCs/>' : ''}${o.i ? '<w:i/><w:iCs/>' : ''}${o.color ? `<w:color w:val="${o.color}"/>` : ''}${o.sz ? `<w:sz w:val="${o.sz}"/><w:szCs w:val="${o.sz}"/>` : ''}${o.hl ? '<w:highlight w:val="yellow"/>' : ''}</w:rPr><w:t xml:space="preserve">${esc(t)}</w:t></w:r>`;
+      const fTag = '<w:rFonts w:ascii="' + f + '" w:hAnsi="' + f + '"/>';
+      return '<w:r><w:rPr>' + fTag + 
+        (o.b ? '<w:b/><w:bCs/>' : '') + 
+        (o.i ? '<w:i/><w:iCs/>' : '') + 
+        (o.color ? '<w:color w:val="' + o.color + '"/>' : '') + 
+        (o.sz ? '<w:sz w:val="' + o.sz + '"/><w:szCs w:val="' + o.sz + '"/>' : '') + 
+        (o.hl ? '<w:highlight w:val="yellow"/>' : '') + 
+        '</w:rPr><w:t xml:space="preserve">' + esc(t) + '</w:t></w:r>';
     }
 
     function aPara(text, o, fontName) {
       o = o || {};
       const f = fontName || "IBM Plex Sans";
-      const ppr = `${o.keepNext ? '<w:keepNext/>' : ''}${o.spacing || ''}${o.ind ? `<w:ind w:left="${o.ind}"${o.firstLine ? ` w:firstLine="${o.firstLine}"` : ''}/>` : ''}${o.jc ? `<w:jc w:val="${o.jc}"/>` : ''}<w:rPr><w:rFonts w:ascii="${f}" w:hAnsi="${f}"/></w:rPr>`;
-      return `<w:p><w:pPr>${ppr}</w:pPr>${text === '' || text == null ? '' : aRun(text, o, f)}</w:p>`;
+      const ppr = (o.keepNext ? '<w:keepNext/>' : '') + 
+        (o.spacing || '') + 
+        (o.ind ? ('<w:ind w:left="' + o.ind + '"' + (o.firstLine ? (' w:firstLine="' + o.firstLine + '"') : '') + '/>') : '') + 
+        (o.jc ? ('<w:jc w:val="' + o.jc + '"/>') : '') + 
+        '<w:rPr><w:rFonts w:ascii="' + f + '" w:hAnsi="' + f + '"/></w:rPr>';
+      return '<w:p><w:pPr>' + ppr + '</w:pPr>' + (text === '' || text == null ? '' : aRun(text, o, f)) + '</w:p>';
     }
 
     function aParas(text, o, fontName) { 
@@ -638,67 +669,73 @@
 
     const BORD_NONE = '<w:top w:val="none" w:sz="0" w:space="0" w:color="FFFFFF"/><w:left w:val="none" w:sz="0" w:space="0" w:color="FFFFFF"/><w:bottom w:val="none" w:sz="0" w:space="0" w:color="FFFFFF"/><w:right w:val="none" w:sz="0" w:space="0" w:color="FFFFFF"/>';
     const BORD_GREY = '<w:top w:val="single" w:sz="4" w:space="0" w:color="D9D9D9"/><w:left w:val="single" w:sz="4" w:space="0" w:color="D9D9D9"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="D9D9D9"/><w:right w:val="single" w:sz="4" w:space="0" w:color="D9D9D9"/>';
-    const MAR = (t, l) => `<w:tcMar><w:top w:w="${t}" w:type="dxa"/><w:left w:w="${l}" w:type="dxa"/><w:bottom w:w="${t}" w:type="dxa"/><w:right w:w="${l}" w:type="dxa"/></w:tcMar>`;
+    const MAR = (t, l) => '<w:tcMar><w:top w:w="' + t + '" w:type="dxa"/><w:left w:w="' + l + '" w:type="dxa"/><w:bottom w:w="' + t + '" w:type="dxa"/><w:right w:w="' + l + '" w:type="dxa"/></w:tcMar>';
     
     function aCell(w, inner, o) {
       o = o || {};
-      return `<w:tc><w:tcPr><w:tcW w:w="${w}" w:type="dxa"/>${o.span ? `<w:gridSpan w:val="${o.span}"/>` : ''}${o.vm ? `<w:vMerge${o.vm === 'restart' ? ' w:val="restart"' : ''}/>` : ''}<w:tcBorders>${o.bord || BORD_NONE}</w:tcBorders>${o.fill ? `<w:shd w:val="clear" w:color="auto" w:fill="${o.fill}"/>` : ''}${o.mar || MAR(45, 90)}${o.noCenter ? '' : '<w:vAlign w:val="center"/>'}</w:tcPr>${inner}</w:tc>`;
+      return '<w:tc><w:tcPr><w:tcW w:w="' + w + '" w:type="dxa"/>' + 
+        (o.span ? ('<w:gridSpan w:val="' + o.span + '"/>') : '') + 
+        (o.vm ? ('<w:vMerge' + (o.vm === 'restart' ? ' w:val="restart"' : '') + '/>') : '') + 
+        '<w:tcBorders>' + (o.bord || BORD_NONE) + '</w:tcBorders>' + 
+        (o.fill ? ('<w:shd w:val="clear" w:color="auto" w:fill="' + o.fill + '"/>') : '') + 
+        (o.mar || MAR(45, 90)) + 
+        (o.noCenter ? '' : '<w:vAlign w:val="center"/>') + 
+        '</w:tcPr>' + inner + '</w:tc>';
     }
 
-    const TBL_PR = w => `<w:tblPr><w:tblW w:w="${w}" w:type="dxa"/><w:tblBorders><w:top w:val="single" w:sz="4" w:space="0" w:color="auto"/><w:left w:val="single" w:sz="4" w:space="0" w:color="auto"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="auto"/><w:right w:val="single" w:sz="4" w:space="0" w:color="auto"/><w:insideH w:val="single" w:sz="4" w:space="0" w:color="auto"/><w:insideV w:val="single" w:sz="4" w:space="0" w:color="auto"/></w:tblBorders><w:tblCellMar><w:left w:w="10" w:type="dxa"/><w:right w:w="10" w:type="dxa"/></w:tblCellMar><w:tblLook w:val="04A0" w:firstRow="1" w:lastRow="0" w:firstColumn="1" w:lastColumn="0" w:noHBand="0" w:noVBand="1"/></w:tblPr>`;
+    const TBL_PR = w => '<w:tblPr><w:tblW w:w="' + w + '" w:type="dxa"/><w:tblBorders><w:top w:val="single" w:sz="4" w:space="0" w:color="auto"/><w:left w:val="single" w:sz="4" w:space="0" w:color="auto"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="auto"/><w:right w:val="single" w:sz="4" w:space="0" w:color="auto"/><w:insideH w:val="single" w:sz="4" w:space="0" w:color="auto"/><w:insideV w:val="single" w:sz="4" w:space="0" w:color="auto"/></w:tblBorders><w:tblCellMar><w:left w:w="10" w:type="dxa"/><w:right w:w="10" w:type="dxa"/></w:tblCellMar><w:tblLook w:val="04A0" w:firstRow="1" w:lastRow="0" w:firstColumn="1" w:lastColumn="0" w:noHBand="0" w:noVBand="1"/></w:tblPr>';
     const TYPE_FILL = { '[Thông tin]': 'EDEDED', '[Thảo luận]': 'FFF2CC', '[Quyết định]': 'C1F0C7' };
 
-    /* 1. XML Body Agenda (IBM Plex Sans, khổ ngang) */
+    /* 1. XML Body Agenda */
     function buildAgendaDocXml(S) {
       const m = S.meta;
-      let x = `<w:p><w:pPr><w:jc w:val="center"/></w:pPr>${aRun('NỘI DUNG HỌP BAN ĐIỀU HÀNH', { b: 1, sz: 32 }, 'IBM Plex Sans')}</w:p>`;
-      x += `<w:p><w:pPr><w:spacing w:after="100"/><w:jc w:val="center"/></w:pPr>${aRun(m.mMonth, { color: '595959', sz: 20 }, 'IBM Plex Sans')}</w:p>`;
+      let x = '<w:p><w:pPr><w:jc w:val="center"/></w:pPr>' + aRun('NỘI DUNG HỌP BAN ĐIỀU HÀNH', { b: 1, sz: 32 }, 'IBM Plex Sans') + '</w:p>';
+      x += '<w:p><w:pPr><w:spacing w:after="100"/><w:jc w:val="center"/></w:pPr>' + aRun(m.mMonth, { color: '595959', sz: 20 }, 'IBM Plex Sans') + '</w:p>';
 
       const lab = (w, t) => aCell(w, aPara(t, { b: 1 }, 'IBM Plex Sans'), { bord: BORD_GREY, fill: 'F2F2F2', noCenter: 1 });
       const val = (w, t) => aCell(w, aPara(t, {}, 'IBM Plex Sans'), { bord: BORD_GREY, noCenter: 1 });
-      x += `<w:tbl>${TBL_PR(15309)}<w:tblGrid><w:gridCol w:w="1866"/><w:gridCol w:w="5768"/><w:gridCol w:w="1717"/><w:gridCol w:w="5958"/></w:tblGrid>`
-        + `<w:tr>${lab(1866, 'Ngày họp:')}${val(5768, m.mDate)}${lab(1717, 'Địa điểm:')}${val(5958, m.mLoc)}</w:tr>`
-        + `<w:tr>${lab(1866, 'Thời gian:')}${val(5768, m.mTime)}${lab(1717, 'Chủ trì:')}${val(5958, m.mHost)}</w:tr>`
-        + `<w:tr><w:trPr><w:gridBefore w:val="2"/><w:wBefore w:w="7634" w:type="dxa"/></w:trPr>${lab(1717, 'Thư ký:')}${val(5953, m.mSec)}</w:tr></w:tbl>`;
-      x += `<w:p><w:pPr><w:spacing w:before="80" w:after="90"/></w:pPr></w:p>`;
+      x += '<w:tbl>' + TBL_PR(15309) + '<w:tblGrid><w:gridCol w:w="1866"/><w:gridCol w:w="5768"/><w:gridCol w:w="1717"/><w:gridCol w:w="5958"/></w:tblGrid>'
+        + '<w:tr>' + lab(1866, 'Ngày họp:') + val(5768, m.mDate) + lab(1717, 'Địa điểm:') + val(5958, m.mLoc) + '</w:tr>'
+        + '<w:tr>' + lab(1866, 'Thời gian:') + val(5768, m.mTime) + lab(1717, 'Chủ trì:') + val(5958, m.mHost) + '</w:tr>'
+        + '<w:tr><w:trPr><w:gridBefore w:val="2"/><w:wBefore w:w="7634" w:type="dxa"/></w:trPr>' + lab(1717, 'Thư ký:') + val(5953, m.mSec) + '</w:tr></w:tbl>';
+      x += '<w:p><w:pPr><w:spacing w:before="80" w:after="90"/></w:pPr></w:p>';
 
       const W = [1416, 4110, 1419, 1985, 2409, 3973];
       const hb = '<w:top w:val="none" w:sz="0" w:space="0" w:color="FFFFFF"/><w:left w:val="none" w:sz="0" w:space="0" w:color="FFFFFF"/><w:bottom w:val="single" w:sz="8" w:space="0" w:color="7F7F7F"/><w:right w:val="none" w:sz="0" w:space="0" w:color="FFFFFF"/>';
       const heads = [['Thời gian', 'center'], ['Nội dung công việc', ''], ['Tính chất', 'center'], ['Phụ trách', ''], ['Tài liệu / Căn cứ', ''], ['Kết quả đầu ra bắt buộc', '']];
-      x += `<w:tbl>${TBL_PR(15312)}<w:tblGrid>${W.map(w => `<w:gridCol w:w="${w}"/>`).join('')}</w:tblGrid>`;
-      x += `<w:tr><w:trPr><w:trHeight w:val="20"/><w:tblHeader/></w:trPr>${heads.map((h, i) => aCell(W[i], aPara(h[0], { b: 1, jc: h[1] }, 'IBM Plex Sans'), { bord: hb, fill: 'F2F2F2' })).join('')}</w:tr>`;
+      x += '<w:tbl>' + TBL_PR(15312) + '<w:tblGrid>' + W.map(w => '<w:gridCol w:w="' + w + '"/>').join('') + '</w:tblGrid>';
+      x += '<w:tr><w:trPr><w:trHeight w:val="20"/><w:tblHeader/></w:trPr>' + heads.map((h, i) => aCell(W[i], aPara(h[0], { b: 1, jc: h[1] }, 'IBM Plex Sans'), { bord: hb, fill: 'F2F2F2' })).join('') + '</w:tr>';
 
       const ib = '<w:top w:val="none" w:sz="0" w:space="0" w:color="FFFFFF"/><w:left w:val="none" w:sz="0" w:space="0" w:color="FFFFFF"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="D0D0D0"/><w:right w:val="none" w:sz="0" w:space="0" w:color="FFFFFF"/>';
       let first = true;
       S.groups.forEach((g, gi) => {
         const items = g.items.filter(it => [it.issue, it.owner, it.doc, it.out].some(v => String(v || '').trim()));
         if (!items.length && !String(g.name || '').trim()) return;
-        if (!first) x += `<w:tr><w:trPr><w:trHeight w:val="20"/></w:trPr>${aCell(15312, aPara('', {}, 'IBM Plex Sans'), { span: 6, mar: MAR(0, 0) })}</w:tr>`;
+        if (!first) x += '<w:tr><w:trPr><w:trHeight w:val="20"/></w:trPr>' + aCell(15312, aPara('', {}, 'IBM Plex Sans'), { span: 6, mar: MAR(0, 0) }) + '</w:tr>';
         first = false;
-        x += `<w:tr><w:trPr><w:trHeight w:val="20"/><w:cantSplit/></w:trPr>${aCell(15312, aPara(String(g.name || '').toUpperCase(), { b: 1, sz: 21, jc: 'center', keepNext: 1 }, 'IBM Plex Sans'), { span: 6, fill: 'F2F2F2', mar: MAR(90, 90), noCenter: 1 })}</w:tr>`;
+        x += '<w:tr><w:trPr><w:trHeight w:val="20"/><w:cantSplit/></w:trPr>' + aCell(15312, aPara(String(g.name || '').toUpperCase(), { b: 1, sz: 21, jc: 'center', keepNext: 1 }, 'IBM Plex Sans'), { span: 6, fill: 'F2F2F2', mar: MAR(90, 90), noCenter: 1 }) + '</w:tr>';
         items.forEach((it, ri) => {
           const type = TYPES.includes(it.type) ? it.type : '[Thảo luận]';
           const timeCell = ri === 0
             ? aCell(W[0], aPara(g.time, { jc: 'center' }, 'IBM Plex Sans'), { vm: 'restart', bord: ib })
             : aCell(W[0], aPara('', { jc: 'center' }, 'IBM Plex Sans'), { vm: 'continue', bord: ib });
-          x += `<w:tr><w:trPr><w:trHeight w:val="20"/><w:cantSplit/></w:trPr>`
+          x += '<w:tr><w:trPr><w:trHeight w:val="20"/><w:cantSplit/></w:trPr>'
             + timeCell
-            + aCell(W[1], aPara(`${gi + 1}.${ri + 1}. ${String(it.issue || '').trim().replace(/\s*\n\s*/g, ' ')}`, { ind: -95 }, 'IBM Plex Sans'), { bord: ib })
+            + aCell(W[1], aPara((gi + 1) + '.' + (ri + 1) + '. ' + String(it.issue || '').trim().replace(/\s*\n\s*/g, ' '), { ind: -95 }, 'IBM Plex Sans'), { bord: ib })
             + aCell(W[2], aPara(type, { b: 1, sz: 17, jc: 'center' }, 'IBM Plex Sans'), { bord: ib, fill: TYPE_FILL[type] })
             + aCell(W[3], aParas(it.owner, { ind: 50 }, 'IBM Plex Sans'), { bord: ib })
             + aCell(W[4], aParas(it.doc, {}, 'IBM Plex Sans'), { bord: ib })
             + aCell(W[5], aParas(it.out, {}, 'IBM Plex Sans'), { bord: ib })
-            + `</w:tr>`;
+            + '</w:tr>';
         });
       });
-      x += `</w:tbl><w:p><w:pPr><w:spacing w:after="0" w:line="240" w:lineRule="auto"/><w:rPr><w:sz w:val="2"/></w:rPr></w:pPr></w:p>`;
+      x += '</w:tbl><w:p><w:pPr><w:spacing w:after="0" w:line="240" w:lineRule="auto"/><w:rPr><w:sz w:val="2"/></w:rPr></w:pPr></w:p>';
 
-      // Page size A4 ngang: 16838 x 11906 dxa, margin 1134 (2cm)
-      const sectPr = `<w:sectPr><w:pgSz w:w="16838" w:h="11906" w:orient="landscape"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="720" w:footer="720" w:gutter="0"/></w:sectPr>`;
-      return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${x}${sectPr}</w:body></w:document>`;
+      const sectPr = '<w:sectPr><w:pgSz w:w="16838" w:h="11906" w:orient="landscape"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="720" w:footer="720" w:gutter="0"/></w:sectPr>';
+      return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>' + x + sectPr + '</w:body></w:document>';
     }
 
-    /* 2. XML Body Thông báo Kết luận (Times New Roman 13pt ~ 26 half-pts, khổ dọc) */
+    /* 2. XML Body Thông báo Kết luận */
     function buildMinutesDocXml(S) {
       const meta = S.meta, md = parseDMY(meta.mDate) || { d: '', m: '', y: '' };
       const issue = parseDMY(meta.mIssueDate) || md;
@@ -710,9 +747,8 @@
         return v ? aRun(v, o, 'Times New Roman') : aRun(ph, Object.assign({}, o, { hl: 1 }), 'Times New Roman'); 
       };
 
-      // Header bảng 2 cột thể thức hành chính
-      let x = `<w:tbl>${TBL_PR(9600)}<w:tblGrid><w:gridCol w:w="4200"/><w:gridCol w:w="5400"/></w:tblGrid>`
-        + `<w:tr>`
+      let x = '<w:tbl>' + TBL_PR(9600) + '<w:tblGrid><w:gridCol w:w="4200"/><w:gridCol w:w="5400"/></w:tblGrid>'
+        + '<w:tr>'
         + aCell(4200, 
             aPara('CHI ĐOÀN CÁN BỘ KHOA TH&QL', { jc: 'center', sz: 24 }, 'Times New Roman') +
             aPara('DỰ ÁN INGENE ACADEMIC SOCIETY', { b: 1, jc: 'center', sz: 24 }, 'Times New Roman') +
@@ -724,69 +760,63 @@
             aPara('CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM', { b: 1, jc: 'center', sz: 24 }, 'Times New Roman') +
             aPara('Độc lập – Tự do – Hạnh phúc', { b: 1, jc: 'center', sz: 24 }, 'Times New Roman') +
             aPara('-----------------------', { b: 1, jc: 'center', sz: 24 }, 'Times New Roman') +
-            `<w:p><w:pPr><w:jc w:val="right"/><w:spacing w:before="60"/></w:pPr>${aRun(`Hà Nội, ngày ${issue.d || '[__]'} tháng ${issue.m \vert{}\vert{} '[__]'} năm ${issue.y || '[____]'}`, { i: 1, sz: 24, hl: !issue.d }, 'Times New Roman')}</w:p>`,
+            '<w:p><w:pPr><w:jc w:val="right"/><w:spacing w:before="60"/></w:pPr>' + aRun('Hà Nội, ngày ' + (issue.d || '[__]') + ' tháng ' + (issue.m || '[__]') + ' năm ' + (issue.y || '[____]'), { i: 1, sz: 24, hl: !issue.d }, 'Times New Roman') + '</w:p>',
             { bord: BORD_NONE, noCenter: 1 }
           )
-        + `</w:tr></w:tbl>`;
+        + '</w:tr></w:tbl>';
 
-      x += `<w:p><w:pPr><w:spacing w:before="240" w:after="60"/><w:jc w:val="center"/></w:pPr>${aRun('THÔNG BÁO KẾT LUẬN BAN ĐIỀU HÀNH', { b: 1, sz: 28 }, 'Times New Roman')}</w:p>`;
-      x += `<w:p><w:pPr><w:spacing w:after="200"/><w:jc w:val="center"/></w:pPr>${aRun(`Tại Phiên họp tháng ${my.m \vert{}\vert{} '[__]'} năm ${my.y || '[____]'}`, { i: 1, sz: 26, hl: !my.m }, 'Times New Roman')}</w:p>`;
+      x += '<w:p><w:pPr><w:spacing w:before="240" w:after="60"/><w:jc w:val="center"/></w:pPr>' + aRun('THÔNG BÁO KẾT LUẬN BAN ĐIỀU HÀNH', { b: 1, sz: 28 }, 'Times New Roman') + '</w:p>';
+      x += '<w:p><w:pPr><w:spacing w:after="200"/><w:jc w:val="center"/></w:pPr>' + aRun('Tại Phiên họp tháng ' + (my.m || '[__]') + ' năm ' + (my.y || '[____]'), { i: 1, sz: 26, hl: !my.m }, 'Times New Roman') + '</w:p>';
 
-      // Đoạn mở đầu
       const p1Runs = aRun('Ngày ') + fRun(md.d, '[__]', { sz: 26 }) + aRun(' tháng ') + fRun(md.m, '[__]', { sz: 26 }) + aRun(' năm ') + fRun(md.y, '[____]', { sz: 26 })
         + aRun(', tại Phiên họp Ban Điều hành của Ingene Academic Society, sau khi tiếp nhận ý kiến của các thành viên về ')
         + fRun(trimEnd(meta.mTopic), '[nội dung chính của phiên họp]', { sz: 26 }) + aRun(', ')
         + (meta.mAuth ? aRun('được sự ủy quyền của Chủ nhiệm Dự án, ', { sz: 26 }) : '')
         + fRun(hostTitle(), '[Chức danh người chủ trì]', { sz: 26 }) + aRun(' có kết luận như sau:');
-      x += `<w:p><w:pPr><w:spacing w:after="100" w:line="300" w:lineRule="auto"/><w:ind w:firstLine="720"/><w:jc w:val="both"/></w:pPr>${p1Runs}</w:p>`;
+      x += '<w:p><w:pPr><w:spacing w:after="100" w:line="300" w:lineRule="auto"/><w:ind w:firstLine="720"/><w:jc w:val="both"/></w:pPr>' + p1Runs + '</w:p>';
 
       const tasks = S.tasks.filter(t => String(t.who || '').trim() || String(t.what || '').trim());
 
       S.groups.forEach((g, i) => {
-        // Tiêu đề mục kết luận
-        x += `<w:p><w:pPr><w:keepNext/><w:spacing w:before="120" w:after="80" w:line="300" w:lineRule="auto"/></w:pPr>${aRun(`${i + 1}. Về `, { b: 1, sz: 26 }, 'Times New Roman')}${fRun(minutesName(g.name), '[tên nhóm nội dung]', { b: 1, sz: 26 })}</w:p>`;
+        x += '<w:p><w:pPr><w:keepNext/><w:spacing w:before="120" w:after="80" w:line="300" w:lineRule="auto"/></w:pPr>' + aRun((i + 1) + '. Về ', { b: 1, sz: 26 }, 'Times New Roman') + fRun(minutesName(g.name), '[tên nhóm nội dung]', { b: 1, sz: 26 }) + '</w:p>';
         
         const cl = lines(S.concl[g.id]);
         if (cl.length) {
           cl.forEach(l => {
-            x += `<w:p><w:pPr><w:spacing w:after="80" w:line="300" w:lineRule="auto"/><w:ind w:firstLine="720"/><w:jc w:val="both"/></w:pPr>${aRun(l, { sz: 26 }, 'Times New Roman')}</w:p>`;
+            x += '<w:p><w:pPr><w:spacing w:after="80" w:line="300" w:lineRule="auto"/><w:ind w:firstLine="720"/><w:jc w:val="both"/></w:pPr>' + aRun(l, { sz: 26 }, 'Times New Roman') + '</w:p>';
           });
         } else {
-          x += `<w:p><w:pPr><w:spacing w:after="80" w:line="300" w:lineRule="auto"/><w:ind w:firstLine="720"/><w:jc w:val="both"/></w:pPr>${aRun('[Nêu kết luận đã chốt.]', { sz: 26, hl: 1 }, 'Times New Roman')}</w:p>`;
+          x += '<w:p><w:pPr><w:spacing w:after="80" w:line="300" w:lineRule="auto"/><w:ind w:firstLine="720"/><w:jc w:val="both"/></w:pPr>' + aRun('[Nêu kết luận đã chốt.]', { sz: 26, hl: 1 }, 'Times New Roman') + '</w:p>';
         }
 
-        // Action items theo khối
         tasks.filter(t => t.gid === g.id).forEach(t => {
           const tRuns = aRun('- Giao đ/c ') + fRun(t.who, '[Họ tên]', { b: 1, sz: 26 }) + aRun(' ') + fRun(trimEnd(t.what), '[việc cần làm]', { sz: 26 })
             + aRun(', hoàn thành trước ngày ') + fRun(t.deadline, '[dd/mm/yyyy]', { sz: 26 })
             + aRun('. Kết quả nghiệm thu: ') + fRun(trimEnd(t.deliv), '[sản phẩm kiểm chứng được]', { i: 1, sz: 26 }) + aRun('.');
-          x += `<w:p><w:pPr><w:spacing w:after="80" w:line="300" w:lineRule="auto"/><w:ind w:firstLine="720"/><w:jc w:val="both"/></w:pPr>${tRuns}</w:p>`;
+          x += '<w:p><w:pPr><w:spacing w:after="80" w:line="300" w:lineRule="auto"/><w:ind w:firstLine="720"/><w:jc w:val="both"/></w:pPr>' + tRuns + '</w:p>';
         });
       });
 
-      // Mục Tổ chức thực hiện
-      x += `<w:p><w:pPr><w:keepNext/><w:spacing w:before="140" w:after="80" w:line="300" w:lineRule="auto"/></w:pPr>${aRun(`${S.groups.length + 1}. Về tổ chức thực hiện`, { b: 1, sz: 26 }, 'Times New Roman')}</w:p>`;
+      x += '<w:p><w:pPr><w:keepNext/><w:spacing w:before="140" w:after="80" w:line="300" w:lineRule="auto"/></w:pPr>' + aRun((S.groups.length + 1) + '. Về tổ chức thực hiện', { b: 1, sz: 26 }, 'Times New Roman') + '</w:p>';
 
-      // Tasks chung (nếu có)
       tasks.filter(t => !S.groups.some(g => g.id === t.gid)).forEach(t => {
         const tRuns = aRun('- Giao đ/c ') + fRun(t.who, '[Họ tên]', { b: 1, sz: 26 }) + aRun(' ') + fRun(trimEnd(t.what), '[việc cần làm]', { sz: 26 })
           + aRun(', hoàn thành trước ngày ') + fRun(t.deadline, '[dd/mm/yyyy]', { sz: 26 })
           + aRun('. Kết quả nghiệm thu: ') + fRun(trimEnd(t.deliv), '[sản phẩm kiểm chứng được]', { i: 1, sz: 26 }) + aRun('.');
-        x += `<w:p><w:pPr><w:spacing w:after="80" w:line="300" w:lineRule="auto"/><w:ind w:firstLine="720"/><w:jc w:val="both"/></w:pPr>${tRuns}</w:p>`;
+        x += '<w:p><w:pPr><w:spacing w:after="80" w:line="300" w:lineRule="auto"/><w:ind w:firstLine="720"/><w:jc w:val="both"/></w:pPr>' + tRuns + '</w:p>';
       });
 
       const chk = String(meta.mCheckDate || '').trim(), od = trimEnd(meta.mOverdue), rs = trimEnd(meta.mReserve);
-      x += `<w:p><w:pPr><w:spacing w:after="80" w:line="300" w:lineRule="auto"/><w:ind w:firstLine="720"/><w:jc w:val="both"/></w:pPr>${aRun('- Thư ký Dự án theo dõi, nhắc nhở các cá nhân, đơn vị tạo tác vụ theo thẩm quyền giao việc của mình trên Hệ thống Ingene Workspace căn cứ kết luận của phiên họp này.', { sz: 26 }, 'Times New Roman')}</w:p>`;
-      x += `<w:p><w:pPr><w:spacing w:after="${rs ? 80 : 100}" w:line="300" w:lineRule="auto"/><w:ind w:firstLine="720"/><w:jc w:val="both"/></w:pPr>${aRun('- Mốc kiểm tra tiến độ tiếp theo: ' + (chk ? 'ngày ' + chk : 'kỳ họp kế tiếp') + '.' + (od ? ' Việc quá hạn được xử lý theo ' + od + '.' : ''), { sz: 26 }, 'Times New Roman')}</w:p>`;
+      x += '<w:p><w:pPr><w:spacing w:after="80" w:line="300" w:lineRule="auto"/><w:ind w:firstLine="720"/><w:jc w:val="both"/></w:pPr>' + aRun('- Thư ký Dự án theo dõi, nhắc nhở các cá nhân, đơn vị tạo tác vụ theo thẩm quyền giao việc của mình trên Hệ thống Ingene Workspace căn cứ kết luận của phiên họp này.', { sz: 26 }, 'Times New Roman') + '</w:p>';
+      x += '<w:p><w:pPr><w:spacing w:after="' + (rs ? 80 : 100) + '" w:line="300" w:lineRule="auto"/><w:ind w:firstLine="720"/><w:jc w:val="both"/></w:pPr>' + aRun('- Mốc kiểm tra tiến độ tiếp theo: ' + (chk ? 'ngày ' + chk : 'kỳ họp kế tiếp') + '.' + (od ? ' Việc quá hạn được xử lý theo ' + od + '.' : ''), { sz: 26 }, 'Times New Roman') + '</w:p>';
       if (rs) {
-        x += `<w:p><w:pPr><w:spacing w:after="100" w:line="300" w:lineRule="auto"/><w:ind w:firstLine="720"/><w:jc w:val="both"/></w:pPr>${aRun('- Vấn đề bảo lưu, chưa quyết: ' + rs + '.', { sz: 26 }, 'Times New Roman')}</w:p>`;
+        x += '<w:p><w:pPr><w:spacing w:after="100" w:line="300" w:lineRule="auto"/><w:ind w:firstLine="720"/><w:jc w:val="both"/></w:pPr>' + aRun('- Vấn đề bảo lưu, chưa quyết: ' + rs + '.', { sz: 26 }, 'Times New Roman') + '</w:p>';
       }
 
-      x += `<w:p><w:pPr><w:spacing w:before="100" w:after="200" w:line="300" w:lineRule="auto"/><w:ind w:firstLine="720"/><w:jc w:val="both"/></w:pPr>${aRun(`Trên đây là kết luận của Ban Điều hành tại Phiên họp tháng ${my.m \vert{}\vert{} '[__]'} năm ${my.y || '[____]'}. Đề nghị các đồng chí nghiêm túc thực hiện./.`, { sz: 26 }, 'Times New Roman')}</w:p>`;
+      x += '<w:p><w:pPr><w:spacing w:before="100" w:after="200" w:line="300" w:lineRule="auto"/><w:ind w:firstLine="720"/><w:jc w:val="both"/></w:pPr>' + aRun('Trên đây là kết luận của Ban Điều hành tại Phiên họp tháng ' + (my.m || '[__]') + ' năm ' + (my.y || '[____]') + '. Đề nghị các đồng chí nghiêm túc thực hiện./.', { sz: 26 }, 'Times New Roman') + '</w:p>';
 
-      // Bảng Nơi nhận & Chữ ký
-      x += `<w:tbl>${TBL_PR(9600)}<w:tblGrid><w:gridCol w:w="4800"/><w:gridCol w:w="4800"/></w:tblGrid>`
-        + `<w:tr>`
+      x += '<w:tbl>' + TBL_PR(9600) + '<w:tblGrid><w:gridCol w:w="4800"/><w:gridCol w:w="4800"/></w:tblGrid>'
+        + '<w:tr>'
         + aCell(4800,
             aPara('Nơi nhận:', { b: 1, i: 1, sz: 22 }, 'Times New Roman') +
             aPara('- Chủ nhiệm Dự án (để b/c);', { sz: 22 }, 'Times New Roman') +
@@ -798,14 +828,13 @@
         + aCell(4800,
             aPara('TM. BAN CHỦ NHIỆM DỰ ÁN', { b: 1, jc: 'center', sz: 26 }, 'Times New Roman') +
             aPara(fRun(meta.mSignTitle, '[CHỨC DANH NGƯỜI KÝ]', { b: 1, sz: 26 }), { jc: 'center' }, 'Times New Roman') +
-            `<w:p><w:pPr><w:spacing w:before="1200"/><w:jc w:val="center"/></w:pPr>${fRun(meta.mSignName, '[Họ và tên người ký]', { b: 1, sz: 26 })}</w:p>`,
+            '<w:p><w:pPr><w:spacing w:before="1200"/><w:jc w:val="center"/></w:pPr>' + fRun(meta.mSignName, '[Họ và tên người ký]', { b: 1, sz: 26 }) + '</w:p>',
             { bord: BORD_NONE, noCenter: 1 }
           )
-        + `</w:tr></w:tbl>`;
+        + '</w:tr></w:tbl>';
 
-      // Page size A4 dọc: 11906 x 16838 dxa, lề trái 1701 (3cm), các lề khác 1134 (2cm)
-      const sectPr = `<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1701" w:header="720" w:footer="720" w:gutter="0"/></w:sectPr>`;
-      return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${x}${sectPr}</w:body></w:document>`;
+      const sectPr = '<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1701" w:header="720" w:footer="720" w:gutter="0"/></w:sectPr>';
+      return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>' + x + sectPr + '</w:body></w:document>';
     }
 
     /* Đóng gói toàn bộ cấu trúc file OpenXML .docx hợp lệ */
@@ -817,47 +846,47 @@
       const zip = new JSZip();
 
       // 1. [Content_Types].xml
-      zip.file('[Content_Types].xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
-  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
-  <Default Extension="xml" ContentType="application/xml"/>
-  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
-  <Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>
-</Types>`);
+      zip.file('[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+  '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+  '<Default Extension="xml" ContentType="application/xml"/>' +
+  '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>' +
+  '<Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>' +
+'</Types>');
 
       // 2. _rels/.rels
-      zip.folder('_rels').file('.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
-</Relationships>`);
+      zip.folder('_rels').file('.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+  '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>' +
+'</Relationships>');
 
       // 3. word/_rels/document.xml.rels
-      zip.folder('word').folder('_rels').file('document.xml.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
-</Relationships>`);
+      zip.folder('word').folder('_rels').file('document.xml.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+  '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>' +
+'</Relationships>');
 
       // 4. word/styles.xml
-      zip.folder('word').file('styles.xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
-  <w:docDefaults>
-    <w:rPrDefault>
-      <w:rPr>
-        <w:rFonts w:ascii="${type === 'agenda' ? 'IBM Plex Sans' : 'Times New Roman'}" w:hAnsi="${type === 'agenda' ? 'IBM Plex Sans' : 'Times New Roman'}"/>
-        <w:sz w:val="${type === 'agenda' ? '22' : '26'}"/>
-        <w:szCs w:val="${type === 'agenda' ? '22' : '26'}"/>
-      </w:rPr>
-    </w:rPrDefault>
-  </w:docDefaults>
-</w:styles>`);
+      zip.folder('word').file('styles.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+'<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">' +
+  '<w:docDefaults>' +
+    '<w:rPrDefault>' +
+      '<w:rPr>' +
+        '<w:rFonts w:ascii="' + (type === 'agenda' ? 'IBM Plex Sans' : 'Times New Roman') + '" w:hAnsi="' + (type === 'agenda' ? 'IBM Plex Sans' : 'Times New Roman') + '"/>' +
+        '<w:sz w:val="' + (type === 'agenda' ? '22' : '26') + '"/>' +
+        '<w:szCs w:val="' + (type === 'agenda' ? '22' : '26') + '"/>' +
+      '</w:rPr>' +
+    '</w:rPrDefault>' +
+  '</w:docDefaults>' +
+'</w:styles>');
 
       // 5. word/document.xml
       const docXml = type === 'agenda' ? buildAgendaDocXml(S) : buildMinutesDocXml(S);
       zip.folder('word').file('document.xml', docXml);
 
       const name = type === 'agenda' 
-        ? `IAS_Agenda_Phien-hop-BDH_${slug(S.meta.mMonth) || 'Agenda'}.docx`
-        : `${slug(S.meta.mNo) || '0X'}-KL-IAS_Thong-bao-ket-luan.docx`;
+        ? ('IAS_Agenda_Phien-hop-BDH_' + (slug(S.meta.mMonth) || 'Agenda') + '.docx')
+        : ((slug(S.meta.mNo) || '0X') + '-KL-IAS_Thong-bao-ket-luan.docx');
 
       const blob = await zip.generateAsync({ 
         type: 'blob', 
@@ -880,9 +909,9 @@
       if (type === 'agenda') {
         if (!S.groups.length) w.push('Chưa có khối nghị sự nào.');
         S.groups.forEach((g, i) => {
-          if (!String(g.name || '').trim()) w.push(`Khối ${i + 1} chưa có tên.`);
-          if (!String(g.time || '').trim()) w.push(`Khối ${i + 1} chưa có thời gian.`);
-          if (!g.items.some(it => String(it.issue || '').trim())) w.push(`Khối ${i + 1} chưa có vấn đề nào.`);
+          if (!String(g.name || '').trim()) w.push('Khối ' + (i + 1) + ' chưa có tên.');
+          if (!String(g.time || '').trim()) w.push('Khối ' + (i + 1) + ' chưa có thời gian.');
+          if (!g.items.some(it => String(it.issue || '').trim())) w.push('Khối ' + (i + 1) + ' chưa có vấn đề nào.');
         });
       } else {
         if (!String(m.mNo || '').trim()) w.push('Chưa có số văn bản.');
@@ -890,13 +919,13 @@
         if (!String(m.mTopic || '').trim()) w.push('Chưa nhập nội dung chính của phiên họp.');
         if (!String(m.mSignName || '').trim()) w.push('Chưa có họ tên người ký.');
         if (m.mCheckDate.trim() && !parseDMY(m.mCheckDate)) w.push('Mốc kiểm tra tiếp theo chưa đúng dạng dd/mm/yyyy.');
-        S.groups.forEach((g, i) => { if (!lines(S.concl[g.id]).length) w.push(`Khối ${i + 1} (${g.name || 'chưa đặt tên'}) chưa có kết luận.`); });
+        S.groups.forEach((g, i) => { if (!lines(S.concl[g.id]).length) w.push('Khối ' + (i + 1) + ' (' + (g.name || 'chưa đặt tên') + ') chưa có kết luận.'); });
         S.tasks.filter(t => String(t.who || '').trim() || String(t.what || '').trim()).forEach((t, i) => {
-          const tag = `Việc giao #${i + 1}`;
-          if (!String(t.who || '').trim() || !String(t.what || '').trim()) w.push(`${tag}: thiếu người nhận hoặc nhiệm vụ.`);
-          else if (/[,;\/]|\svà\s/i.test(t.who)) w.push(`${tag}: chỉ giao cho 01 người (đang có nhiều tên).`);
-          if (!parseDMY(t.deadline)) w.push(`${tag}: hạn chót phải là ngày cụ thể dd/mm/yyyy.`);
-          if (!String(t.deliv || '').trim()) w.push(`${tag}: thiếu kết quả nghiệm thu.`);
+          const tag = 'Việc giao #' + (i + 1);
+          if (!String(t.who || '').trim() || !String(t.what || '').trim()) w.push(tag + ': thiếu người nhận hoặc nhiệm vụ.');
+          else if (/[,;\/]|\svà\s/i.test(t.who)) w.push(tag + ': chỉ giao cho 01 người (đang có nhiều tên).');
+          if (!parseDMY(t.deadline)) w.push(tag + ': hạn chót phải là ngày cụ thể dd/mm/yyyy.');
+          if (!String(t.deliv || '').trim()) w.push(tag + ': thiếu kết quả nghiệm thu.');
         });
       }
       return w;
@@ -904,33 +933,44 @@
 
     async function previewDoc(type) {
       currentPreviewType = type;
-      const host = $('previewHost'); host.innerHTML = '<div class="preview-msg">Đang dựng bản xem trước...</div>';
-      $('previewModal').style.display = 'flex';
-      const warns = validate(type), wEl = $('previewWarn');$('previewNote').style.display = type === 'minutes' ? 'block' : 'none';
-      wEl.style.display = warns.length ? 'block' : 'none';
-      wEl.innerHTML = '';
-      if (warns.length) { 
-        const b = document.createElement('b'); 
-        b.textContent = 'Còn thiếu: '; 
-        wEl.appendChild(b); 
-        wEl.appendChild(document.createTextNode(warns.join(' '))); 
+      const host = $('previewHost'); 
+      if (host) host.innerHTML = '<div class="preview-msg">Đang dựng bản xem trước...</div>';
+      if ($('previewModal')) $('previewModal').style.display = 'flex';
+      const warns = validate(type), wEl = $('previewWarn');
+      if ($('previewNote')) $('previewNote').style.display = type === 'minutes' ? 'block' : 'none';
+      if (wEl) {
+        wEl.style.display = warns.length ? 'block' : 'none';
+        wEl.innerHTML = '';
+        if (warns.length) { 
+          const b = document.createElement('b'); 
+          b.textContent = 'Còn thiếu: '; 
+          wEl.appendChild(b); 
+          wEl.appendChild(document.createTextNode(warns.join(' '))); 
+        }
       }
       try {
         const { blob } = await buildDocx(type, { preview: true });
         if (!window.docx) throw new Error('Không tải được thư viện xem trước (cần mạng internet). Bạn vẫn có thể bấm "Xuất file ngay".');
-        host.innerHTML = '';
-        await docx.renderAsync(blob, host, null, { className: 'docx', inWrapper: true, breakPages: true, ignoreLastRenderedPageBreak: true, useBase64URL: true });
+        if (host) {
+          host.innerHTML = '';
+          await docx.renderAsync(blob, host, null, { className: 'docx', inWrapper: true, breakPages: true, ignoreLastRenderedPageBreak: true, useBase64URL: true });
+        }
       } catch (err) {
-        host.innerHTML = ''; 
-        const d = document.createElement('div'); 
-        d.className = 'preview-msg'; 
-        d.textContent = err.message || String(err); 
-        host.appendChild(d);
+        if (host) {
+          host.innerHTML = ''; 
+          const d = document.createElement('div'); 
+          d.className = 'preview-msg'; 
+          d.textContent = err.message || String(err); 
+          host.appendChild(d);
+        }
       }
     }
 
-    function closePreview() { $('previewModal').style.display = 'none';$('previewHost').innerHTML = ''; }
-    document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('previewModal').style.display === 'flex') closePreview(); });
+    function closePreview() { 
+      if ($('previewModal')) $('previewModal').style.display = 'none'; 
+      if ($('previewHost')) $('previewHost').innerHTML = ''; 
+    }
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('previewModal') && $('previewModal').style.display === 'flex') closePreview(); });
     function triggerExport() { exportDoc(currentPreviewType, true); }
 
     async function exportDoc(type, fromPreview) {
@@ -957,7 +997,7 @@
       updateGuideAndStepper();
 
       if (meetingRef) {
-        $('saveState').innerHTML = `<span class="inline-block w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span> Đang kết nối Cloud...`;
+        if ($('saveState')) $('saveState').innerHTML = '<span class="inline-block w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span> Đang kết nối Cloud...';
         meetingRef.on('value', snapshot => {
           const remoteData = snapshot.val();
           if (remoteData && remoteData.v === 2) {
@@ -965,13 +1005,13 @@
             applyState(remoteData);
             try { localStorage.setItem(DRAFT_KEY, JSON.stringify(remoteData)); } catch(e){}
             isApplyingRemote = false;
-            $('saveState').innerHTML = `<span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span> Đã đồng bộ Cloud`;
+            if ($('saveState')) $('saveState').innerHTML = '<span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span> Đã đồng bộ Cloud';
           } else {
             scheduleSave();
           }
         }, err => {
           console.error("Lỗi đọc Firebase:", err);
-          $('saveState').innerHTML = `<span class="inline-block w-2 h-2 rounded-full bg-rose-500"></span> Lỗi phân quyền Cloud`;
+          if ($('saveState')) $('saveState').innerHTML = '<span class="inline-block w-2 h-2 rounded-full bg-rose-500"></span> Lỗi phân quyền Cloud';
         });
       }
     });
